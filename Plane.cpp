@@ -17,10 +17,14 @@
 */
 bool Plane::isInside(glm::vec3 pt)
 {
+    glm::vec3 normal = Plane::normal(pt);
 
-	//=== Complete this function ====
-	
-	return true;
+    float A = glm::dot(cross(b - a, pt - a), normal);
+    float B =  glm::dot(cross((c - b),(pt - b)), normal);
+    float C = glm::dot(cross((d - c),(pt - c)), normal);
+    float D = glm::dot(cross((a - d),(pt - d)), normal);
+
+    return (A > 0 && B > 0 && C > 0 && D > 0);
 }
 
 /**
@@ -49,7 +53,7 @@ glm::vec3 Plane::normal(glm::vec3 pt)
 {
 	glm::vec3 n = glm::vec3(0);
 
-	//=== Complete this function ====
+	n = glm::normalize(glm::cross(b - a, d - a));
 
     return n;
 }
