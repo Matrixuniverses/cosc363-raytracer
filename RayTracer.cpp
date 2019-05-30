@@ -349,7 +349,7 @@ void initialize()
     glClearColor(0, 0, 0, 1);
 
     // Create some textures
-    sphereTexture = TextureBMP();
+    sphereTexture = TextureBMP((char*) "./earth.bmp");
 
 	// Create some spheres
     Sphere *sphere1 = new Sphere(glm::vec3(-5.0, -5.0, -120.0), 10.0, glm::vec3(0.2, 0.2, 0.2));
