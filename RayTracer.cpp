@@ -14,6 +14,7 @@
 #include "Cylinder.h"
 #include "SceneObject.h"
 #include "Ray.h"
+#include "TextureBMP.h"
 #include <GL/glut.h>
 using namespace std;
 
@@ -27,6 +28,7 @@ const float XMAX =  WIDTH * 0.5;
 const float YMIN = -HEIGHT * 0.5;
 const float YMAX =  HEIGHT * 0.5;
 
+TextureBMP sphereTexture;
 vector<SceneObject*> sceneObjects;  //A global list containing pointers to objects in the scene
 
 
@@ -345,6 +347,9 @@ void initialize()
     glMatrixMode(GL_PROJECTION);
     gluOrtho2D(XMIN, XMAX, YMIN, YMAX);
     glClearColor(0, 0, 0, 1);
+
+    // Create some textures
+    sphereTexture = TextureBMP();
 
 	// Create some spheres
     Sphere *sphere1 = new Sphere(glm::vec3(-5.0, -5.0, -120.0), 10.0, glm::vec3(0.2, 0.2, 0.2));
