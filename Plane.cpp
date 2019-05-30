@@ -9,7 +9,6 @@
 #include "Plane.h"
 #include <math.h>
 
-
 /**
 * Checks if a point pt is inside the current polygon
 * Implement a point inclusion test using 
@@ -40,7 +39,7 @@ float Plane::intersect(glm::vec3 posn, glm::vec3 dir)
 	if(fabs(t) < 0.0001) return -1;
 	glm::vec3 q = posn + dir*t;
 	if(isInside(q)) return t;
-    else return -1;
+    return -1;
 }
 
 /**

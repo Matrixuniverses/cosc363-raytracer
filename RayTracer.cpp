@@ -36,25 +36,26 @@ glm::vec3 trace(Ray ray, int step)
 {
     // Lighting constants
 	glm::vec3 backgroundCol(0);
-	glm::vec3 light(10, 40, -3);
+	glm::vec3 light1(5, 40, -5);
+	glm::vec3 light2(-10, 60, -100);
 	glm::vec3 ambientCol(0.2);
 
 	// Final colour of the point after all trace steps
 	glm::vec3 colSum(0);
 
-
     // Calculate the closest point of intersection, if there is none then return the background colour
     ray.closestPt(sceneObjects);
     if(ray.xindex == -1) return backgroundCol;
-
 
     // Calculate color values and normal vectors of objects
     glm::vec3 materialCol = sceneObjects[ray.xindex] -> getColor(); // Colour of the scene object at point of intersect
     glm::vec3 normalVec = sceneObjects[ray.xindex] -> normal(ray.xpt); // Normal vector
 
     // Distance from light source (must be calculated before normalisation)
-    float light1Dist = glm::length(light - ray.xpt);
-    glm::vec3 lightVec1 = glm::normalize(light - ray.xpt); // Light vector (normalized)
+    float light1Dist = glm::length(light1 - ray.xpt);
+    float light2Dist = glm::length(light2 - ray.xpt);
+    glm::vec3 lightVec1 = glm::normalize(light1 - ray.xpt); // Light vector (normalized)
+    glm::vec3 lightVec2 = glm::normalize(light2 - ray.xpt); // Light vector (normalized)
 
 
     /*
@@ -65,22 +66,31 @@ glm::vec3 trace(Ray ray, int step)
 
     // Calculate reflection vector
     glm::vec3 reflectionVec1 = glm::reflect(-lightVec1, normalVec);
+    glm::vec3 reflectionVec2 = glm::reflect(-lightVec2, normalVec);
     glm::vec3 viewDir = -ray.dir;
 
     // Calculate the specular component
-    float rDotv = glm::dot(reflectionVec1, viewDir);
-    float specCol;
+    float rDotv1 = glm::dot(reflectionVec1, viewDir);
+    float rDotv2 = glm::dot(reflectionVec2, viewDir);
+    float specCol1 = 0.0;
+    float specCol2 = 0.0;
 
-    // If specular component is less than 0, set specular colour to 0
-    if(rDotv < 0) {
-        specCol = 0.0;
-    } else {
-        specCol = pow(rDotv, 10);
-    }
+    if(rDotv1 >= 0) specCol1 = pow(rDotv1, 10);
+    if(rDotv2 >= 0) specCol2 = pow(rDotv2, 10);
+
 
     // Calculate light direction
-    float lDotn = glm::dot(normalVec, lightVec1);
-    ambientCol += specCol;
+    float lDotn1 = glm::dot(normalVec, lightVec1);
+    float lDotn2 = glm::dot(normalVec, lightVec2);
+
+
+    if(ray.xindex == 3){
+        int xLen = (int)((ray.xpt.x + 20) / 8) % 2;
+        int zLen = (int)((ray.xpt.z + 50) / 8) % 2;
+
+        materialCol = glm::vec3(0.4, 0.1, 0.1);
+        if((xLen && zLen) || (!xLen && !zLen)) materialCol = glm::vec3(0.4, 0.4, 0.4);
+    }
 
     /*
      * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
@@ -88,17 +98,26 @@ glm::vec3 trace(Ray ray, int step)
      * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
      */
 
-    // Create a new shadow ray and calculate the closest point of intersection
-    Ray shadow(ray.xpt, lightVec1);
-    shadow.closestPt(sceneObjects);
+    // Create shadow rays and calculate the closest point of intersection
+    Ray shadow1(ray.xpt, lightVec1);
+    shadow1.closestPt(sceneObjects);
+
+    Ray shadow2(ray.xpt, lightVec2);
+    shadow2.closestPt(sceneObjects);
 
     // If l.n < 0 then there is no specular reflection, only ambient and diffuse
     // If the shadow vector length is less than the light vector distance then the object is in shadow
     // Else calculate all of the colours of Phong's model
-    if(lDotn < 0 || (shadow.xindex > -1 && shadow.xdist < light1Dist)) {
+    if(lDotn1 < 0 || (shadow1.xindex > -1 && shadow1.xdist < light1Dist)) {
         colSum = ambientCol * materialCol;
     } else {
-        colSum = (ambientCol * materialCol + (lDotn * materialCol + specCol));
+        colSum = (ambientCol * materialCol + (lDotn1 * materialCol + specCol1));
+    }
+
+    if(lDotn2 < 0 || (shadow2.xindex > -1 && shadow2.xdist < light2Dist)) {
+        colSum += ambientCol * materialCol;
+    } else {
+        colSum += (ambientCol * materialCol + (lDotn2 * materialCol + specCol2));
     }
 
     /*
@@ -108,7 +127,7 @@ glm::vec3 trace(Ray ray, int step)
      */
 
     // Only perform reflection calculations on the first sphere
-    if(ray.xindex == 0 && step < MAX_STEPS) {
+    if(ray.xindex < 2 && step < MAX_STEPS) {
         glm::vec3 reflectionDir = glm::reflect(ray.dir, normalVec);
         Ray reflectionRay(ray.xpt, reflectionDir);
 
@@ -117,7 +136,6 @@ glm::vec3 trace(Ray ray, int step)
         glm::vec3 reflectionCol = trace(reflectionRay, step + 1);
         colSum += (0.8f * reflectionCol);
     }
-
 
     return colSum;
 }
@@ -180,7 +198,7 @@ void initialize()
 
 	//-- Create pointers to spheres
     Sphere *sphere1 = new Sphere(glm::vec3(-5.0, -5.0, -90.0), 10.0, glm::vec3(0, 0, 1));
-    Sphere *sphere2 = new Sphere(glm::vec3(5.5, 5.0, -80.0), 5.0, glm::vec3(1, 0, 0));
+    Sphere *sphere2 = new Sphere(glm::vec3(5.5, 5.0, -60.0), 5.0, glm::vec3(1, 0, 0));
     Sphere *sphere3 = new Sphere(glm::vec3(-10.0, -5.0, -60.0), 2.0, glm::vec3(0, 1, 0.5));
 
     //-- Create a pointer to floor plane
@@ -188,7 +206,7 @@ void initialize()
             glm::vec3(20, -20, -40),
             glm::vec3(20, -20, -200),
             glm::vec3(-20, -20, -200),
-            glm::vec3(0.5, 0.5, 0));
+            glm::vec3(0.2));
 
 	//--Add the above to the list of scene objects.
     sceneObjects.push_back(sphere1);
