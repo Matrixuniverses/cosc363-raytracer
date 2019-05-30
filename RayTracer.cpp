@@ -1,7 +1,7 @@
 /*========================================================================
-* COSC 363  Computer Graphics (2018)
-* Ray tracer 
-* See Lab07.pdf for details.
+* COSC363  Computer Graphics (2019)
+* Ray tracer assignment
+* Author: Sam Shankland (sjs227)
 *=========================================================================
 */
 #include <iostream>
@@ -33,31 +33,92 @@ vector<SceneObject*> sceneObjects;  //A global list containing pointers to objec
 //----------------------------------------------------------------------------------
 glm::vec3 trace(Ray ray, int step)
 {
+    // Lighting constants
 	glm::vec3 backgroundCol(0);
 	glm::vec3 light(10, 40, -3);
-	glm::vec3 ambientCol(0.2);   //Ambient color of light
+	glm::vec3 ambientCol(0.2);
 
-    ray.closestPt(sceneObjects);		//Compute the closest point of intersetion of objects with the ray
+	// Final colour of the point after all trace steps
+	glm::vec3 colSum(0);
 
-    if(ray.xindex == -1) return backgroundCol;      //If there is no intersection return background colour
-    glm::vec3 materialCol = sceneObjects[ray.xindex]->getColor(); //else return object's colour
 
-    glm::vec3 normalVec = sceneObjects[ray.xindex]->normal(ray.xpt); // Vector normalization
-    glm::vec3 lightVec = glm::normalize(light - ray.xpt);
+    // Calculate the closest point of intersection, if there is none then return the background colour
+    ray.closestPt(sceneObjects);
+    if(ray.xindex == -1) return backgroundCol;
 
-    glm::vec3 reflVector = glm::reflect(-lightVec, normalVec);
+
+    // Calculate color values and normal vectors of objects
+    glm::vec3 materialCol = sceneObjects[ray.xindex] -> getColor(); // Colour of the scene object at point of intersect
+    glm::vec3 normalVec = sceneObjects[ray.xindex] -> normal(ray.xpt); // Normal vector
+
+    // Distance from light source (must be calculated before normalisation)
+    float light1Dist = glm::length(light - ray.xpt);
+    glm::vec3 lightVec1 = glm::normalize(light - ray.xpt); // Light vector (normalized)
+
+
+    /*
+     * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+     * LIGHTING CALCULATIONS
+     * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+     */
+
+    // Calculate reflection vector
+    glm::vec3 reflectionVec1 = glm::reflect(-lightVec1, normalVec);
     glm::vec3 viewDir = -ray.dir;
 
-    float rDotv = glm::dot(reflVector, viewDir);
-    float specTerm;
-    if(rDotv < 0) specTerm = 0.0;
-    else specTerm = pow(rDotv, 10);
+    // Calculate the specular component
+    float rDotv = glm::dot(reflectionVec1, viewDir);
+    float specCol;
 
-    float lDotn = glm::dot(normalVec, lightVec);
-    ambientCol += specTerm;
+    // If specular component is less than 0, set specular colour to 0
+    if(rDotv < 0) {
+        specCol = 0.0;
+    } else {
+        specCol = pow(rDotv, 10);
+    }
 
-    if(lDotn < 0) return ambientCol*materialCol;
-    return (ambientCol*materialCol + (lDotn*materialCol + specTerm));
+    // Calculate light direction
+    float lDotn = glm::dot(normalVec, lightVec1);
+    ambientCol += specCol;
+
+    /*
+     * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+     * SHADOW CALCULATIONS
+     * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+     */
+
+    // Create a new shadow ray and calculate the closest point of intersection
+    Ray shadow(ray.xpt, lightVec1);
+    shadow.closestPt(sceneObjects);
+
+    // If l.n < 0 then there is no specular reflection, only ambient and diffuse
+    // If the shadow vector length is less than the light vector distance then the object is in shadow
+    // Else calculate all of the colours of Phong's model
+    if(lDotn < 0 || (shadow.xindex > -1 && shadow.xdist < light1Dist)) {
+        colSum = ambientCol * materialCol;
+    } else {
+        colSum = (ambientCol * materialCol + (lDotn * materialCol + specCol));
+    }
+
+    /*
+     * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+     * REFLECTION CALCULATIONS
+     * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+     */
+
+    // Only perform reflection calculations on the first sphere
+    if(ray.xindex == 0 && step < MAX_STEPS) {
+        glm::vec3 reflectionDir = glm::reflect(ray.dir, normalVec);
+        Ray reflectionRay(ray.xpt, reflectionDir);
+
+        // Recursively generate the reflections, up to MAX_STEPS reflections
+        // The reflection will have a dulling factor of 20%
+        glm::vec3 reflectionCol = trace(reflectionRay, step++);
+        colSum += (0.8f * reflectionCol);
+    }
+
+
+    return colSum;
 }
 
 //---The main display module -----------------------------------------------------------
@@ -100,7 +161,7 @@ void display()
     }
 
     glEnd();
-    glFlush();
+    glutSwapBuffers();
 }
 
 
@@ -117,23 +178,25 @@ void initialize()
     glClearColor(0, 0, 0, 1);
 
 	//-- Create a pointer to a sphere object
-    Sphere *sphere1 = new Sphere(glm::vec3(-5.0, -5.0, -90.0), 15.0, glm::vec3(0, 0, 1));
-    Sphere *sphere2 = new Sphere(glm::vec3(7.5, 5.0, -85.0), 5.0, glm::vec3(0, 0, 1));
-    sphere2->setColor(glm::vec3(1, 0, 0));
+    Sphere *sphere1 = new Sphere(glm::vec3(-5.0, -5.0, -90.0), 10.0, glm::vec3(0, 0, 1));
+    Sphere *sphere2 = new Sphere(glm::vec3(5.5, 5.0, -80.0), 5.0, glm::vec3(0, 0, 1));
+    Sphere *sphere3 = new Sphere(glm::vec3(-10.0, -5.0, -60.0), 2.0, glm::vec3(0, 1, 0.5));
+    sphere2 -> setColor(glm::vec3(1, 0, 0));
 
 	//--Add the above to the list of scene objects.
     sceneObjects.push_back(sphere1);
     sceneObjects.push_back(sphere2);
+    sceneObjects.push_back(sphere3);
 }
 
 
 
 int main(int argc, char *argv[]) {
     glutInit(&argc, argv);
-    glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB );
-    glutInitWindowSize(600, 600);
+    glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB );
+    glutInitWindowSize(700, 700);
     glutInitWindowPosition(20, 20);
-    glutCreateWindow("Raytracer");
+    glutCreateWindow("Ray-tracing assignment");
 
     glutDisplayFunc(display);
     initialize();
