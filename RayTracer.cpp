@@ -43,7 +43,7 @@ glm::vec3 trace(Ray ray, int step)
 	glm::vec3 ambientCol(0.2);
 
 	float glassERA = 1.0f/1.05f;
-	float opacity = 0.3f;
+	float opacity = 0.4f;
 
     // Calculate the closest point of intersection, if there is none then return the background colour
     ray.closestPt(sceneObjects);
@@ -106,7 +106,38 @@ glm::vec3 trace(Ray ray, int step)
 
     /*
      * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-     * REFRACTIONS CALCULATIONS
+     * TRANSPARENCY CALCULATIONS - DOES NOT INCLUDE ANY REFRACTIVE COMPUTATIONS
+     *
+     * Object: Red sphere
+     * Index: 1
+     * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+     */
+
+    if(ray.xindex == 1 && step < MAX_STEPS) {
+        // Create a new ray inside of the transparent object (this is to retrieve the farthest point of intersection
+        Ray internalRay(ray.xpt, ray.dir);
+        internalRay.closestPt(sceneObjects);
+
+        // Check to see if there was a point of intersection
+        if(internalRay.xindex == -1) return backgroundCol;
+
+        // Create a new ray that will be used to render all of the objects behind the transparent object
+        Ray externalRay(internalRay.xpt, ray.dir);
+        externalRay.closestPt(sceneObjects);
+
+        // If there is no object then return the background colour
+        if(externalRay.xindex == -1) return backgroundCol;
+
+        // Recursively perform the trace algorithm until MAX_STEPS reached
+        glm::vec3 externalSum = trace(externalRay, step + 1);
+        colSum = colSum * opacity + externalSum * (1 - opacity);
+
+        return colSum;
+    }
+
+    /*
+     * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+     * REFRACTIONS CALCULATIONS - ALL REFRACTIVE OBJECTS HAVE SOME TRANSPARENCY BY DEFAULT
      *
      * Object: White sphere
      * Index:  2
@@ -137,11 +168,10 @@ glm::vec3 trace(Ray ray, int step)
 
         // Recurse through tracing algorithm to detect more refractions
         glm::vec3 refractedColSum = trace(refractionRay2, step + 1);
-        colSum =  colSum * opacity + refractedColSum * (1 - opacity);
+        colSum = colSum * opacity + refractedColSum * (1 - opacity);
 
         return colSum;
     }
-
 
     /*
      * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
@@ -159,13 +189,13 @@ glm::vec3 trace(Ray ray, int step)
     // If l.n < 0 then there is no specular reflection, only ambient and diffuse
     // If the shadow vector length is less than the light vector distance then the object is in shadow
     // Else calculate all of the colours of Phong's model
-    if(lDotn1 < 0 || (shadow1.xindex > -1 && shadow1.xdist < light1Dist)) {
+    if(lDotn1 < 0 || ((shadow1.xindex > -1 && shadow1.xdist < light1Dist))) {
         colSum = ambientCol * materialCol;
     } else {
         colSum = (ambientCol * materialCol + (lDotn1 * materialCol + specCol1));
     }
 
-    if(lDotn2 < 0 || (shadow2.xindex > -1 && shadow2.xdist < light2Dist)) {
+    if(lDotn2 < 0 || ((shadow2.xindex > -1 && shadow2.xdist < light2Dist))) {
         colSum += ambientCol * materialCol;
     } else {
         colSum += (ambientCol * materialCol + (lDotn2 * materialCol + specCol2));
@@ -191,16 +221,26 @@ glm::vec3 trace(Ray ray, int step)
     return colSum;
 }
 
-void cube(float xCoord, float yCoord, float zCoord, float len, float wdt, float hgt, glm::vec3 col)
+/**
+ * Creates a cube object given an origin point and sizes
+ * @param xCoord x-coordinate of the origin
+ * @param yCoord y-coordinate of the origin
+ * @param zCoord z-coordinate of the origin
+ * @param wdt Width of the object
+ * @param dph Depth of the object
+ * @param hgt Height of the object
+ * @param col Colour of the object
+ */
+void cubeoid(float xCoord, float yCoord, float zCoord, float wdt, float dph, float hgt, glm::vec3 col)
 {
     glm::vec3 A = glm::vec3(xCoord, yCoord, zCoord);
-    glm::vec3 B = glm::vec3(xCoord + len, yCoord, zCoord);
-    glm::vec3 C = glm::vec3(xCoord + len ,yCoord + hgt, zCoord);
+    glm::vec3 B = glm::vec3(xCoord + wdt, yCoord, zCoord);
+    glm::vec3 C = glm::vec3(xCoord + wdt ,yCoord + hgt, zCoord);
     glm::vec3 D = glm::vec3(xCoord, yCoord + hgt, zCoord);
-    glm::vec3 E = glm::vec3(xCoord + len,yCoord,zCoord - wdt);
-    glm::vec3 F = glm::vec3(xCoord + len,yCoord + hgt,zCoord - wdt);
-    glm::vec3 G = glm::vec3(xCoord, yCoord + hgt,zCoord - wdt);
-    glm::vec3 H = glm::vec3(xCoord, yCoord, zCoord - wdt);
+    glm::vec3 E = glm::vec3(xCoord + wdt,yCoord,zCoord - dph);
+    glm::vec3 F = glm::vec3(xCoord + wdt,yCoord + hgt,zCoord - dph);
+    glm::vec3 G = glm::vec3(xCoord, yCoord + hgt,zCoord - dph);
+    glm::vec3 H = glm::vec3(xCoord, yCoord, zCoord - dph);
 
     Plane *plane1 = new Plane(A, B, C, D, col);
     Plane *plane2 = new Plane(B, E, F, C, col);
@@ -216,6 +256,35 @@ void cube(float xCoord, float yCoord, float zCoord, float len, float wdt, float 
     sceneObjects.push_back(plane5);
     sceneObjects.push_back(plane6);
 
+}
+
+glm::vec3 antiAliasSuperSample(glm::vec3 eyePos, float pixelSize, float xPoint, float yPoint) {
+    float lowerQuad = pixelSize * 0.25f;
+    float upperQuad = pixelSize * 0.75f;
+
+    glm::vec3 colSum(0);
+
+    // Bottom left quadrant ray
+    Ray ray = Ray(eyePos, glm::vec3(xPoint + lowerQuad, yPoint + lowerQuad, -EDIST));
+    ray.normalize();
+    colSum += trace(ray, 1);
+
+    // Top left quadrant ray
+    ray = Ray(eyePos, glm::vec3(xPoint + lowerQuad, yPoint + upperQuad, -EDIST));
+    ray.normalize();
+    colSum += trace(ray, 1);
+
+    // Bottom right quadrant ray
+    ray = Ray(eyePos, glm::vec3(xPoint + upperQuad, yPoint + lowerQuad, -EDIST));
+    ray.normalize();
+    colSum += trace(ray, 1);
+
+    // Top right quadrant ray
+    ray = Ray(eyePos, glm::vec3(xPoint + upperQuad, yPoint + upperQuad, -EDIST));
+    ray.normalize();
+    colSum += trace(ray, 1);
+
+    return colSum *= glm::vec3(0.25);
 }
 
 //---The main display module -----------------------------------------------------------
@@ -247,7 +316,10 @@ void display()
 
 		    Ray ray = Ray(eye, dir);		//Create a ray originating from the camera in the direction 'dir'
 			ray.normalize();				//Normalize the direction of the ray to a unit vector
-		    glm::vec3 col = trace (ray, 1); //Trace the primary ray and get the colour value
+
+			// Use anti-aliasing
+		    //glm::vec3 col = antiAliasSuperSample(eye, cellX, xp, yp);
+		    glm::vec3 col = trace (ray, 1);
 
 			glColor3f(col.r, col.g, col.b);
 			glVertex2f(xp, yp);				//Draw each cell with its color value
@@ -275,11 +347,11 @@ void initialize()
     glClearColor(0, 0, 0, 1);
 
 	// Create some spheres
-    Sphere *sphere1 = new Sphere(glm::vec3(-5.0, -5.0, -120), 10.0, glm::vec3(0, 0, 1));
-    Sphere *sphere2 = new Sphere(glm::vec3(5.5, 5.0, -80), 5.0, glm::vec3(1, 0, 0));
-    Sphere *sphere3 = new Sphere(glm::vec3(-10.0, -5.0, -60.0), 2.0, glm::vec3(0.4, 0.4, 0.4));
-    Cone *cone1 = new Cone(glm::vec3(12.5, -10, -90.0), 3, 7.5, glm::vec3(1, 0.7529, 0.7961));
-    Cylinder *cylinder1 = new Cylinder(glm::vec3(-10, -10, -80), 4, 5, glm::vec3(1, 1, 0));
+    Sphere *sphere1 = new Sphere(glm::vec3(-5.0, -5.0, -120.0), 10.0, glm::vec3(0.2, 0.2, 0.2));
+    Sphere *sphere2 = new Sphere(glm::vec3(7.5, -5, -60.0), 5.0, glm::vec3(1, 0, 0));
+    Sphere *sphere3 = new Sphere(glm::vec3(-7.5, -2.5, -60.0), 2.5, glm::vec3(0.4, 0.4, 0.4));
+    Cone *cone1 = new Cone(glm::vec3(12.5, -10.0, -90.0), 3.0, 7.5, glm::vec3(0.1, 0.2, 0.4));
+    Cylinder *cylinder1 = new Cylinder(glm::vec3(-10.0, -10.0, -80.0), 4.0, 5.0, glm::vec3(1, 1, 0));
 
     // Create a floor plane
     Plane *floorPlane = new Plane(glm::vec3(-20, -20, -40),
@@ -296,8 +368,8 @@ void initialize()
     sceneObjects.push_back(cone1); // Index 4 - Cone
     sceneObjects.push_back(cylinder1); // Index 5 - Yellow cylinder
 
-    // Create a cube
-    cube(-10, 7.5, -90.0, 2, 2, 2, glm::vec3(0.5, 0.5, 0.5));
+    // Create a rectangular prism
+    cubeoid(-10, 7.5, -90.0, 4, 2, 6, glm::vec3(0.2, 0.8, 0.8));
 }
 
 
