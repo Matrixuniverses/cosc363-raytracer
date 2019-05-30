@@ -230,7 +230,7 @@ void initialize()
     Sphere *sphere2 = new Sphere(glm::vec3(5.5, 5.0, -80), 5.0, glm::vec3(1, 0, 0));
     Sphere *sphere3 = new Sphere(glm::vec3(-10.0, -5.0, -60.0), 2.0, glm::vec3(0, 1, 0.5));
     Cone *cone1 = new Cone(glm::vec3(12.5, -10, -90.0), 3, 7.5, glm::vec3(1, 0.7529, 0.7961));
-    Cylinder *cylinder1 = new Cylinder(glm::vec3(10, 15, -80), 4, 8.0, glm::vec3(0.5, 1, 0));
+    Cylinder *cylinder1 = new Cylinder(glm::vec3(-10, -10, -80), 4, 5, glm::vec3(1, 1, 0));
 
     // Create a floor plane
     Plane *floorPlane = new Plane(glm::vec3(-20, -20, -40),
@@ -240,12 +240,12 @@ void initialize()
             glm::vec3(0.2));
 
 	// Add all the created object pointers to the sceneObjects stack
-    sceneObjects.push_back(sphere1);
-    sceneObjects.push_back(sphere2);
-    sceneObjects.push_back(sphere3);
-    sceneObjects.push_back(floorPlane);
-    sceneObjects.push_back(cone1);
-    sceneObjects.push_back(cylinder1);
+    sceneObjects.push_back(sphere1); // Index 0 - Blue sphere (reflections)
+    sceneObjects.push_back(sphere2); // Index 1 - Red sphere
+    sceneObjects.push_back(sphere3); // Index 2 - Green sphere (translucent with refraction)
+    sceneObjects.push_back(floorPlane); // Index 3 - Checkered floor plane
+    sceneObjects.push_back(cone1); // Index 4 - Cone
+    sceneObjects.push_back(cylinder1); // Index 5 - Yellow cylinder
 
     // Create a cube
     cube(-10, 7.5, -90.0, 2, 2, 2, glm::vec3(0.5, 0.5, 0.5));

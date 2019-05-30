@@ -7,7 +7,7 @@ float Cylinder::intersect(glm::vec3 pos, glm::vec3 dir) {
 
     // Solving for t by substituting ray equations into cylindrical equation
     float A = pow(dir.x, 2) + pow(dir.z, 2);
-    float B = 2 * (pow(dir.x, 2) + pow(dir.z, 2));
+    float B = 2 * (D.x * dir.x + D.z * dir.z);
     float C = pow(D.x, 2) + pow(D.z, 2) - pow(radius, 2);
 
     // Discriminant for quadratic solver, if discriminant is imaginary then no intersection occurred
