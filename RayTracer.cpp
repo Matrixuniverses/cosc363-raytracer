@@ -11,6 +11,7 @@
 #include "Sphere.h"
 #include "Cone.h"
 #include "Plane.h"
+#include "Cylinder.h"
 #include "SceneObject.h"
 #include "Ray.h"
 #include <GL/glut.h>
@@ -19,7 +20,7 @@ using namespace std;
 const float WIDTH = 20.0;  
 const float HEIGHT = 20.0;
 const float EDIST = 40.0;
-const int NUMDIV = 1000;
+const int NUMDIV = 700;
 const int MAX_STEPS = 5;
 const float XMIN = -WIDTH * 0.5;
 const float XMAX =  WIDTH * 0.5;
@@ -224,25 +225,27 @@ void initialize()
     gluOrtho2D(XMIN, XMAX, YMIN, YMAX);
     glClearColor(0, 0, 0, 1);
 
-	//-- Create pointers to spheres
-    Sphere *sphere1 = new Sphere(glm::vec3(-5.0, -5.0, -90.0), 10.0, glm::vec3(0, 0, 1));
-    Sphere *sphere2 = new Sphere(glm::vec3(5.5, 5.0, -60.0), 5.0, glm::vec3(1, 0, 0));
+	// Create some spheres
+    Sphere *sphere1 = new Sphere(glm::vec3(-5.0, -5.0, -120), 10.0, glm::vec3(0, 0, 1));
+    Sphere *sphere2 = new Sphere(glm::vec3(5.5, 5.0, -80), 5.0, glm::vec3(1, 0, 0));
     Sphere *sphere3 = new Sphere(glm::vec3(-10.0, -5.0, -60.0), 2.0, glm::vec3(0, 1, 0.5));
     Cone *cone1 = new Cone(glm::vec3(12.5, -10, -90.0), 3, 7.5, glm::vec3(1, 0.7529, 0.7961));
+    Cylinder *cylinder1 = new Cylinder(glm::vec3(10, 15, -80), 4, 8.0, glm::vec3(0.5, 1, 0));
 
-    //-- Create a pointer to floor plane
+    // Create a floor plane
     Plane *floorPlane = new Plane(glm::vec3(-20, -20, -40),
             glm::vec3(20, -20, -40),
             glm::vec3(20, -20, -200),
             glm::vec3(-20, -20, -200),
             glm::vec3(0.2));
 
-	//--Add the above to the list of scene objects.
+	// Add all the created object pointers to the sceneObjects stack
     sceneObjects.push_back(sphere1);
     sceneObjects.push_back(sphere2);
     sceneObjects.push_back(sphere3);
     sceneObjects.push_back(floorPlane);
     sceneObjects.push_back(cone1);
+    sceneObjects.push_back(cylinder1);
 
     // Create a cube
     cube(-10, 7.5, -90.0, 2, 2, 2, glm::vec3(0.5, 0.5, 0.5));

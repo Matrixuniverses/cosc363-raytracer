@@ -1,23 +1,14 @@
-#include "Cone.h"
+#include "Cylinder.h"
 #include <math.h>
 
-/**
- * Checks for a ray intersection with the cone using a quadratic solver for each of the two intersection points
- * @param pos Ray position
- * @param dir Ray direction
- * @return -1 if no intersection, closest point of intersection relative to the position of the ray otherwise
- * @author sjs227
- */
-float Cone::intersect(glm::vec3 pos, glm::vec3 dir) {
+float Cylinder::intersect(glm::vec3 pos, glm::vec3 dir) {
 
     glm::vec3 D = pos - center;
-    float yDist = height - pos.y + center.y;
-    float tanHR = pow((radius / height), 2);
 
-    // Solving for t by substituting ray equations into conic equation
-    float A = pow(dir.x, 2) + pow(dir.z, 2) - (tanHR * pow(dir.y, 2));
-    float B = 2 * (D.x * dir.x + D.z * dir.z + tanHR * yDist * dir.y);
-    float C = pow(D.x, 2) + pow(D.z, 2) - (tanHR * pow(yDist, 2));
+    // Solving for t by substituting ray equations into cylindrical equation
+    float A = pow(dir.x, 2) + pow(dir.z, 2);
+    float B = 2 * (pow(dir.x, 2) + pow(dir.z, 2));
+    float C = pow(D.x, 2) + pow(D.z, 2) - pow(radius, 2);
 
     // Discriminant for quadratic solver, if discriminant is imaginary then no intersection occurred
     float delta = pow(B, 2) - 4 * (A * C);
@@ -55,13 +46,7 @@ float Cone::intersect(glm::vec3 pos, glm::vec3 dir) {
     }
 }
 
-/**
- * Compute the normal vector at a given position
- * @param pos Position of normal
- * @return normalized glm::vec3 of the surface normal
- */
-glm::vec3 Cone::normal(glm::vec3 pt) {
+glm::vec3 Cylinder::normal(glm::vec3 pt) {
     glm::vec3 d = pt - center;
-    float r = sqrt(d.x * d.x + d.z * d.z);
-    return glm::normalize(glm::vec3 (d.x, r * (radius / height), d.z));
+    return glm::normalize(glm::vec3 (d.x, 0, d.z));
 }
