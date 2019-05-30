@@ -40,7 +40,9 @@ float Cone::intersect(glm::vec3 pos, glm::vec3 dir) {
         termMax = sol2;
     }
 
-    // Return closest intersection if ray is
+    // Checking if the ray is intersecting at the closest point or the farthest point
+    // If distance from source to intersection is minimum return the closest intersect
+    // Dont return an intersection if the y pos is outside of the height y positions
     float yPos = pos.y + dir.y * termMin;
     if ((yPos >= center.y) && (yPos <= center.y + height)){
         return termMin;
@@ -54,7 +56,6 @@ float Cone::intersect(glm::vec3 pos, glm::vec3 dir) {
 glm::vec3 Cone::normal(glm::vec3 pos) {
     glm::vec3 d = pos - center;
     float r = sqrt(d.x * d.x + d.z * d.z);
-    glm::vec3 n= glm::vec3 (d.x, r*(radius/height), d.z);
-    n=glm::normalize(n);
-    return n;
+    glm::vec3 n = glm::vec3 (d.x, r * (radius/height), d.z);
+    return glm::normalize(n);
 }
