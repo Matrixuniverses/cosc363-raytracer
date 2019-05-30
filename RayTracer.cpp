@@ -42,8 +42,8 @@ glm::vec3 trace(Ray ray, int step)
 	glm::vec3 light2(-10, 60, -100);
 	glm::vec3 ambientCol(0.2);
 
-	// Final colour of the point after all trace steps
-	glm::vec3 colSum(0);
+	float glassERA = 1.0f/1.05f;
+	float opacity = 0.3f;
 
     // Calculate the closest point of intersection, if there is none then return the background colour
     ray.closestPt(sceneObjects);
@@ -59,6 +59,8 @@ glm::vec3 trace(Ray ray, int step)
     glm::vec3 lightVec1 = glm::normalize(light1 - ray.xpt); // Light vector (normalized)
     glm::vec3 lightVec2 = glm::normalize(light2 - ray.xpt); // Light vector (normalized)
 
+    // Final colour of the point after all trace steps
+    glm::vec3 colSum = materialCol;
 
     /*
      * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
@@ -86,6 +88,14 @@ glm::vec3 trace(Ray ray, int step)
     float lDotn2 = glm::dot(normalVec, lightVec2);
 
 
+    /*
+     * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+     * PROCEDURAL TEXTURE GENERATIONS
+     * Object: Plane
+     * Index:  3
+     * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+     */
+
     if(ray.xindex == 3){
         int xLen = (int)((ray.xpt.x + 20) / 8) % 2;
         int zLen = (int)((ray.xpt.z + 50) / 8) % 2;
@@ -93,6 +103,45 @@ glm::vec3 trace(Ray ray, int step)
         materialCol = glm::vec3(0.4, 0.1, 0.1);
         if((xLen && zLen) || (!xLen && !zLen)) materialCol = glm::vec3(0.4, 0.4, 0.4);
     }
+
+    /*
+     * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+     * REFRACTIONS CALCULATIONS
+     *
+     * Object: White sphere
+     * Index:  2
+     * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+     */
+
+    if(ray.xindex == 2 && step < MAX_STEPS) {
+        glm::vec3 refractionDir1 = glm::refract(ray.dir, normalVec, glassERA);
+
+        // Generate another ray for inside the refractive object using computed vector using refractive index
+        Ray refractionRay1(ray.xpt, refractionDir1);
+        refractionRay1.closestPt(sceneObjects);
+
+        // Case of no object intersection for refracted ray
+        if(refractionRay1.xindex == -1) return backgroundCol;
+
+        // Calculate the new normal vectors for objects based on the exiting rays vector to other objects
+        glm::vec3 normalVec2 = sceneObjects[refractionRay1.xindex] -> normal(refractionRay1.xpt);
+        glm::vec3 refractionDir2 = glm::refract(refractionDir1, -normalVec2, glassERA);
+
+        // Generate the new ray for the scene objects using the vector from the exit point of the ray,
+        // and the nearest intersection with other objects
+        Ray refractionRay2(refractionRay1.xpt, refractionDir2);
+        refractionRay2.closestPt(sceneObjects);
+
+        // Case of no object intersection for refracted ray
+        if(refractionRay2.xindex == -1) return backgroundCol;
+
+        // Recurse through tracing algorithm to detect more refractions
+        glm::vec3 refractedColSum = trace(refractionRay2, step + 1);
+        colSum =  colSum * opacity + refractedColSum * (1 - opacity);
+
+        return colSum;
+    }
+
 
     /*
      * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
@@ -228,7 +277,7 @@ void initialize()
 	// Create some spheres
     Sphere *sphere1 = new Sphere(glm::vec3(-5.0, -5.0, -120), 10.0, glm::vec3(0, 0, 1));
     Sphere *sphere2 = new Sphere(glm::vec3(5.5, 5.0, -80), 5.0, glm::vec3(1, 0, 0));
-    Sphere *sphere3 = new Sphere(glm::vec3(-10.0, -5.0, -60.0), 2.0, glm::vec3(0, 1, 0.5));
+    Sphere *sphere3 = new Sphere(glm::vec3(-10.0, -5.0, -60.0), 2.0, glm::vec3(0.4, 0.4, 0.4));
     Cone *cone1 = new Cone(glm::vec3(12.5, -10, -90.0), 3, 7.5, glm::vec3(1, 0.7529, 0.7961));
     Cylinder *cylinder1 = new Cylinder(glm::vec3(-10, -10, -80), 4, 5, glm::vec3(1, 1, 0));
 
