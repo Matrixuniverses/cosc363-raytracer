@@ -9,6 +9,7 @@
 #include <vector>
 #include <glm/glm.hpp>
 #include "Sphere.h"
+#include "Cone.h"
 #include "Plane.h"
 #include "SceneObject.h"
 #include "Ray.h"
@@ -127,17 +128,44 @@ glm::vec3 trace(Ray ray, int step)
      */
 
     // Only perform reflection calculations on the first sphere
-    if(ray.xindex < 2 && step < MAX_STEPS) {
+    if(ray.xindex == 0 && step < MAX_STEPS) {
         glm::vec3 reflectionDir = glm::reflect(ray.dir, normalVec);
         Ray reflectionRay(ray.xpt, reflectionDir);
 
         // Recursively generate the reflections, up to MAX_STEPS reflections
         // The reflection will have a dulling factor of 20%
         glm::vec3 reflectionCol = trace(reflectionRay, step + 1);
-        colSum += (0.8f * reflectionCol);
+        colSum += (0.7f * reflectionCol);
     }
 
     return colSum;
+}
+
+void cube(float xCoord, float yCoord, float zCoord, float len, float wdt, float hgt, glm::vec3 col)
+{
+    glm::vec3 A = glm::vec3(xCoord, yCoord, zCoord);
+    glm::vec3 B = glm::vec3(xCoord + len, yCoord, zCoord);
+    glm::vec3 C = glm::vec3(xCoord + len ,yCoord + hgt, zCoord);
+    glm::vec3 D = glm::vec3(xCoord, yCoord + hgt, zCoord);
+    glm::vec3 E = glm::vec3(xCoord + len,yCoord,zCoord - wdt);
+    glm::vec3 F = glm::vec3(xCoord + len,yCoord + hgt,zCoord - wdt);
+    glm::vec3 G = glm::vec3(xCoord, yCoord + hgt,zCoord - wdt);
+    glm::vec3 H = glm::vec3(xCoord, yCoord, zCoord - wdt);
+
+    Plane *plane1 = new Plane(A, B, C, D, col);
+    Plane *plane2 = new Plane(B, E, F, C, col);
+    Plane *plane3 = new Plane(E, H, G, F, col);
+    Plane *plane4 = new Plane(D, G, H, A, col);
+    Plane *plane5 = new Plane(D, C, F, G, col);
+    Plane *plane6 = new Plane(H, E, B, A, col);
+
+    sceneObjects.push_back(plane1);
+    sceneObjects.push_back(plane2);
+    sceneObjects.push_back(plane3);
+    sceneObjects.push_back(plane4);
+    sceneObjects.push_back(plane5);
+    sceneObjects.push_back(plane6);
+
 }
 
 //---The main display module -----------------------------------------------------------
@@ -147,8 +175,8 @@ glm::vec3 trace(Ray ray, int step)
 void display()
 {
 	float xp, yp;  //grid point
-	float cellX = (XMAX-XMIN)/NUMDIV;  //cell width
-	float cellY = (YMAX-YMIN)/NUMDIV;  //cell height
+	float cellX = (XMAX-XMIN) / NUMDIV;  //cell width
+	float cellY = (YMAX-YMIN) / NUMDIV;  //cell height
 
 	glm::vec3 eye(0., 0., 0.);  //The eye position (source of primary rays) is the origin
 
@@ -200,6 +228,7 @@ void initialize()
     Sphere *sphere1 = new Sphere(glm::vec3(-5.0, -5.0, -90.0), 10.0, glm::vec3(0, 0, 1));
     Sphere *sphere2 = new Sphere(glm::vec3(5.5, 5.0, -60.0), 5.0, glm::vec3(1, 0, 0));
     Sphere *sphere3 = new Sphere(glm::vec3(-10.0, -5.0, -60.0), 2.0, glm::vec3(0, 1, 0.5));
+    Cone *cone1 = new Cone(glm::vec3(12.5, -10, -90.0), 3, 7.5, glm::vec3(1, 0.7529, 0.7961));
 
     //-- Create a pointer to floor plane
     Plane *floorPlane = new Plane(glm::vec3(-20, -20, -40),
@@ -213,6 +242,10 @@ void initialize()
     sceneObjects.push_back(sphere2);
     sceneObjects.push_back(sphere3);
     sceneObjects.push_back(floorPlane);
+    sceneObjects.push_back(cone1);
+
+    // Create a cube
+    cube(-10, 7.5, -90.0, 2, 2, 2, glm::vec3(0.5, 0.5, 0.5));
 }
 
 
