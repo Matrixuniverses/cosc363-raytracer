@@ -28,7 +28,8 @@ const float XMAX =  WIDTH * 0.5;
 const float YMIN = -HEIGHT * 0.5;
 const float YMAX =  HEIGHT * 0.5;
 
-TextureBMP sphereTexture;
+TextureBMP earthTexture;
+TextureBMP sunTexture;
 TextureBMP backPlane;
 vector<SceneObject*> sceneObjects;  //A global list containing pointers to objects in the scene
 
@@ -94,11 +95,12 @@ glm::vec3 trace(Ray ray, int step)
     /*
      * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
      * PROCEDURAL TEXTURE GENERATIONS
-     * Objects: Floor plane, back plane, sphere
-     * Index:  3, 4, 5
+     * Objects: Floor plane, back plane, sphere, sphere
+     * Index:  3, 4, 5, 6
      * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
      */
 
+    // Planar procdural texture mapping
     if(ray.xindex == 3) {
         int xLen = (int) ((ray.xpt.x + 80) / 8) % 2;
         int zLen = (int) ((ray.xpt.z + 200) / 8) % 2;
@@ -107,6 +109,7 @@ glm::vec3 trace(Ray ray, int step)
         if((xLen && zLen) || (!xLen && !zLen)) materialCol = glm::vec3(0.4, 0.4, 0.4);
     }
 
+    // Planar texture mapping
     if(ray.xindex == 4) {
         float sVal = (ray.xpt.x + 80) / 160;
         float tVal = (ray.xpt.y + 20) / 40;
@@ -114,15 +117,35 @@ glm::vec3 trace(Ray ray, int step)
         materialCol = backPlane.getColorAt(sVal, tVal);
     }
 
+    // Non planar texture mapping
     if(ray.xindex == 5) {
-        glm::vec3 sphereCenter(7.5, 12.5, -80);
+        glm::vec3 sphereCenter(7.5, 9.5, -80);
         glm::vec3 dir = glm::normalize(ray.xpt - sphereCenter);
 
         float uVal = 0.5 + atan2(dir.z, dir.x) / (2 * M_PI);
         float vVal = 0.5 + asin(dir.y) / M_PI;
 
-        materialCol = sphereTexture.getColorAt(uVal, vVal);
+        materialCol = sunTexture.getColorAt(uVal, vVal);
 
+    }
+
+    // Non-planar procedurally generated texture
+    if(ray.xindex == 6) {
+        if((int) (ray.xpt.x + ray.xpt.y - 10) % 2 == 0) {
+            materialCol = glm::vec3(1, 0, 0);
+        }
+
+    }
+
+    // Non-planar texture mapping
+    if(ray.xindex == 7) {
+        glm::vec3 sphereCenter(-3.5, 6, -40);
+        glm::vec3 dir = glm::normalize(ray.xpt - sphereCenter);
+
+        float uVal = 0.5 + atan2(dir.z, dir.x) / (2 * M_PI);
+        float vVal = 0.5 + asin(dir.y) / M_PI;
+
+        materialCol = earthTexture.getColorAt(uVal, vVal);
     }
 
     /*
@@ -134,7 +157,7 @@ glm::vec3 trace(Ray ray, int step)
      * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
      */
 
-    if(ray.xindex == 1 && step < MAX_STEPS) {
+    if(ray.xindex == 10 && step < MAX_STEPS) {
         // Create a new ray inside of the transparent object (this is to retrieve the farthest point of intersection
         Ray internalRay(ray.xpt, ray.dir);
         internalRay.closestPt(sceneObjects);
@@ -154,7 +177,7 @@ glm::vec3 trace(Ray ray, int step)
         colSum = colSum * opacity + externalSum * (1 - opacity) + specCol1 + specCol2;
 
 		return colSum;
-		}
+    }
 
     /*
      * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
@@ -165,7 +188,7 @@ glm::vec3 trace(Ray ray, int step)
      * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
      */
 
-    if(ray.xindex == 2 && step < MAX_STEPS) {
+    if((ray.xindex == 2 || ray.xindex == 1) && step < MAX_STEPS) {
         glm::vec3 refractionDir1 = glm::refract(ray.dir, normalVec, glassERA);
 
         // Generate another ray for inside the refractive object using computed vector using refractive index
@@ -220,6 +243,7 @@ glm::vec3 trace(Ray ray, int step)
 		}
 	}
 
+    // Second light source shadows
     if(lDotn2 < 0 || ((shadow2.xindex > -1 && shadow2.xdist < light2Dist))) {
         colSum += ambientCol * materialCol;
     } else {
@@ -284,7 +308,6 @@ void cubeoid(float xCoord, float yCoord, float zCoord, float wdt, float dph, flo
     sceneObjects.push_back(plane4);
     sceneObjects.push_back(plane5);
     sceneObjects.push_back(plane6);
-
 }
 
 glm::vec3 antiAliasSuperSample(glm::vec3 eyePos, float pixelSize, float xPoint, float yPoint) {
@@ -376,16 +399,21 @@ void initialize()
     glClearColor(0, 0, 0, 1);
 
     // Create some textures
-    sphereTexture = TextureBMP((char*) "./earth.bmp");
+    earthTexture = TextureBMP((char*) "./earth.bmp");
+    sunTexture = TextureBMP((char*) "./sun.bmp");
 	backPlane = TextureBMP((char*) "./background.bmp");
 
 
 	// Create some spheres
-    Sphere *sphere1 = new Sphere(glm::vec3(-5.0, -5.0, -120.0), 10.0, glm::vec3(0.2));
-    Sphere *sphere2 = new Sphere(glm::vec3(7.5, -5, -60.0), 5.0, glm::vec3(1, 0, 0));
-    Sphere *sphere3 = new Sphere(glm::vec3(-7.5, -2.5, -60.0), 2.5, glm::vec3(0.4));
-    Sphere *sphere4 = new Sphere(glm::vec3(7.5, 12.5, -80), 5, glm::vec3(0.2));
-    Cone *cone1 = new Cone(glm::vec3(12.5, -10.0, -90.0), 3.0, 7.5, glm::vec3(0.1, 0.2, 0.4));
+    Sphere *sphere1 = new Sphere(glm::vec3(-5.0, -5.0, -120.0), 10.0, glm::vec3(0.3));
+    Sphere *sphere2 = new Sphere(glm::vec3(8.5, -5, -60.0), 5.0, glm::vec3(1, 0, 0));
+    Sphere *sphere3 = new Sphere(glm::vec3(-9.0, -2.5, -60.0), 3.0, glm::vec3(0.4));
+    Sphere *sphere4 = new Sphere(glm::vec3(7.5, 10.0, -80), 6.0, glm::vec3(0.2));
+    Sphere *sphere5 = new Sphere(glm::vec3(7.5, -5.5, -80), 2.5, glm::vec3(1, 1, 0));
+    Sphere *sphere6 = new Sphere(glm::vec3(-3.5, 6.0, -40), 1.0, glm::vec3(0.2));
+    Sphere *sphere7 = new Sphere(glm::vec3(-1.0, -2.5, -60), 4.0, glm::vec3(0.2, 1.0, 0.2));
+
+    Cone *cone1 = new Cone(glm::vec3(12.5, -5.0, -90.0), 3.0, 7.5, glm::vec3(0.1, 0.2, 0.4));
     Cylinder *cylinder1 = new Cylinder(glm::vec3(-10.0, -10.0, -80.0), 4.0, 5.0, glm::vec3(1, 1, 0));
 
     // Create a floor plane
@@ -407,12 +435,15 @@ void initialize()
     sceneObjects.push_back(sphere3); // Index 2 - Green sphere (translucent with refraction)
     sceneObjects.push_back(floorPlane); // Index 3 - Checkered floor plane
 	sceneObjects.push_back(backPlane); // Index 4 - Textured back plane
-	sceneObjects.push_back(sphere4); // Index 5 - Textured sphere
-    sceneObjects.push_back(cone1); // Index 6 - Cone
-    sceneObjects.push_back(cylinder1); // Index 7 - Yellow cylinder
+	sceneObjects.push_back(sphere4); // Index 5 - Textured sphere sun
+	sceneObjects.push_back(sphere5); // Index 6 - Sphere with procedurally generated texture
+	sceneObjects.push_back(sphere6); // Index 7 - Textured sphere earth
+    sceneObjects.push_back(cone1); // Index 8 - Cone
+    sceneObjects.push_back(cylinder1); // Index 9 - Yellow cylinder
+    sceneObjects.push_back(sphere7); // Index 9 - Yellow cylinder
 
     // Create a rectangular prism
-    cubeoid(-10, 7.5, -90.0, 4, 6, 6, glm::vec3(0.2, 0.8, 0.8));
+    cubeoid(-7.5, 2.5, -40.0, 2, 50, 2, glm::vec3(0.5, 1, 0.5)); // Index 11+
 }
 
 
