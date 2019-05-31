@@ -195,15 +195,21 @@ glm::vec3 trace(Ray ray, int step)
     if(lDotn1 < 0 || ((shadow1.xindex > -1 && shadow1.xdist < light1Dist))) {
         colSum = ambientCol * materialCol;
     } else {
-		colSum = (ambientCol * materialCol + (lDotn1 * materialCol + (0.25f * specCol1)));
-		if(ray.xindex != 4) colSum = (ambientCol * materialCol + (lDotn1 * materialCol + specCol1));
-    }
+		if(ray.xindex != 4) { 
+			colSum = (ambientCol * materialCol + (lDotn1 * materialCol + specCol1));
+    	} else {
+			colSum = (ambientCol * materialCol + (lDotn1 * materialCol + (0.25f * specCol1)));
+		}
+	}
 
     if(lDotn2 < 0 || ((shadow2.xindex > -1 && shadow2.xdist < light2Dist))) {
         colSum += ambientCol * materialCol;
     } else {
-		colSum = (ambientCol * materialCol + (lDotn2 * materialCol + (0.251f * specCol2)));
-        if(ray.xindex != 4) colSum += (ambientCol * materialCol + (lDotn2 * materialCol + specCol2));
+        if(ray.xindex != 4) {
+			colSum += (ambientCol * materialCol + (lDotn2 * materialCol + specCol2));
+		} else {
+			colSum += (ambientCol * materialCol + (lDotn2 * materialCol + (0.251f * specCol2)));
+		}
     }
 
     /*
@@ -364,16 +370,16 @@ void initialize()
     Cylinder *cylinder1 = new Cylinder(glm::vec3(-10.0, -10.0, -80.0), 4.0, 5.0, glm::vec3(1, 1, 0));
 
     // Create a floor plane
-    Plane *floorPlane = new Plane(glm::vec3(-40, -20, -40),
-            glm::vec3(40, -20, -40),
-            glm::vec3(40, -20, -200),
-            glm::vec3(-40, -20, -200),
+    Plane *floorPlane = new Plane(glm::vec3(-60, -20, -40),
+            glm::vec3(60, -20, -40),
+            glm::vec3(60, -20, -200),
+            glm::vec3(-60, -20, -200),
             glm::vec3(0.2));
 	
-	Plane *backPlane = new Plane(glm::vec3(-40, -20, -200),
-			glm::vec3(40, -20, -200),
-			glm::vec3(40, 100, -200),
-			glm::vec3(-40, 100, -200),
+	Plane *backPlane = new Plane(glm::vec3(-60, -20, -200),
+			glm::vec3(60, -20, -200),
+			glm::vec3(60, 25, -200),
+			glm::vec3(-60, 25, -200),
 			glm::vec3(0.5, 0.1, 0.1));
 
 	// Add all the created object pointers to the sceneObjects stack
