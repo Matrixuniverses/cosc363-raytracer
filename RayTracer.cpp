@@ -46,7 +46,7 @@ glm::vec3 trace(Ray ray, int step)
 	glm::vec3 ambientCol(0.2);
 
 	float glassERA = 1.0f/1.05f;
-	float opacity = 0.5f;
+	float opacity = 0.2f;
 
     // Calculate the closest point of intersection, if there is none then return the background colour
     ray.closestPt(sceneObjects);
@@ -99,12 +99,19 @@ glm::vec3 trace(Ray ray, int step)
      * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
      */
 
-    if(ray.xindex == 3){
+    if(ray.xindex == 3) {
         int xLen = (int) ((ray.xpt.x + 80) / 8) % 2;
         int zLen = (int) ((ray.xpt.z + 200) / 8) % 2;
 
         materialCol = glm::vec3(0.4, 0.1, 0.1);
         if((xLen && zLen) || (!xLen && !zLen)) materialCol = glm::vec3(0.4, 0.4, 0.4);
+    }
+
+    if(ray.xindex == 4) {
+        float sVal = (ray.xpt.x + 80) / 160;
+        float tVal = (ray.xpt.y + 20) / 40;
+
+        materialCol = backPlane.getColorAt(sVal, tVal);
     }
 
     /*
@@ -378,9 +385,9 @@ void initialize()
 	
 	Plane *backPlane = new Plane(glm::vec3(-60, -20, -200),
 			glm::vec3(60, -20, -200),
-			glm::vec3(60, 25, -200),
-			glm::vec3(-60, 25, -200),
-			glm::vec3(0.5, 0.1, 0.1));
+			glm::vec3(60, 20, -200),
+			glm::vec3(-60, 20, -200),
+			glm::vec3(0.1));
 
 	// Add all the created object pointers to the sceneObjects stack
     sceneObjects.push_back(sphere1); // Index 0 - Blue sphere (reflections)
