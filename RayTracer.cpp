@@ -29,6 +29,7 @@ const float YMIN = -HEIGHT * 0.5;
 const float YMAX =  HEIGHT * 0.5;
 
 TextureBMP sphereTexture;
+TextureBMP backPlane;
 vector<SceneObject*> sceneObjects;  //A global list containing pointers to objects in the scene
 
 
@@ -45,7 +46,7 @@ glm::vec3 trace(Ray ray, int step)
 	glm::vec3 ambientCol(0.2);
 
 	float glassERA = 1.0f/1.05f;
-	float opacity = 0.4f;
+	float opacity = 0.5f;
 
     // Calculate the closest point of intersection, if there is none then return the background colour
     ray.closestPt(sceneObjects);
@@ -99,8 +100,8 @@ glm::vec3 trace(Ray ray, int step)
      */
 
     if(ray.xindex == 3){
-        int xLen = (int)((ray.xpt.x + 20) / 8) % 2;
-        int zLen = (int)((ray.xpt.z + 50) / 8) % 2;
+        int xLen = (int) ((ray.xpt.x + 80) / 8) % 2;
+        int zLen = (int) ((ray.xpt.z + 200) / 8) % 2;
 
         materialCol = glm::vec3(0.4, 0.1, 0.1);
         if((xLen && zLen) || (!xLen && !zLen)) materialCol = glm::vec3(0.4, 0.4, 0.4);
@@ -132,10 +133,10 @@ glm::vec3 trace(Ray ray, int step)
 
         // Recursively perform the trace algorithm until MAX_STEPS reached
         glm::vec3 externalSum = trace(externalRay, step + 1);
-        colSum = colSum * opacity + externalSum * (1 - opacity);
+        colSum = colSum * opacity + externalSum * (1 - opacity) + specCol1 + specCol2;
 
-        return colSum;
-    }
+		return colSum;
+		}
 
     /*
      * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
@@ -170,7 +171,7 @@ glm::vec3 trace(Ray ray, int step)
 
         // Recurse through tracing algorithm to detect more refractions
         glm::vec3 refractedColSum = trace(refractionRay2, step + 1);
-        colSum = colSum * opacity + refractedColSum * (1 - opacity);
+        colSum = colSum * opacity + refractedColSum * (1 - opacity) + specCol1 + specCol2;
 
         return colSum;
     }
@@ -194,13 +195,15 @@ glm::vec3 trace(Ray ray, int step)
     if(lDotn1 < 0 || ((shadow1.xindex > -1 && shadow1.xdist < light1Dist))) {
         colSum = ambientCol * materialCol;
     } else {
-        colSum = (ambientCol * materialCol + (lDotn1 * materialCol + specCol1));
+		colSum = (ambientCol * materialCol + (lDotn1 * materialCol + (0.25f * specCol1)));
+		if(ray.xindex != 4) colSum = (ambientCol * materialCol + (lDotn1 * materialCol + specCol1));
     }
 
     if(lDotn2 < 0 || ((shadow2.xindex > -1 && shadow2.xdist < light2Dist))) {
         colSum += ambientCol * materialCol;
     } else {
-        colSum += (ambientCol * materialCol + (lDotn2 * materialCol + specCol2));
+		colSum = (ambientCol * materialCol + (lDotn2 * materialCol + (0.251f * specCol2)));
+        if(ray.xindex != 4) colSum += (ambientCol * materialCol + (lDotn2 * materialCol + specCol2));
     }
 
     /*
@@ -350,6 +353,8 @@ void initialize()
 
     // Create some textures
     sphereTexture = TextureBMP((char*) "./earth.bmp");
+	backPlane = TextureBMP((char*) "./background.bmp");
+
 
 	// Create some spheres
     Sphere *sphere1 = new Sphere(glm::vec3(-5.0, -5.0, -120.0), 10.0, glm::vec3(0.2, 0.2, 0.2));
@@ -359,22 +364,29 @@ void initialize()
     Cylinder *cylinder1 = new Cylinder(glm::vec3(-10.0, -10.0, -80.0), 4.0, 5.0, glm::vec3(1, 1, 0));
 
     // Create a floor plane
-    Plane *floorPlane = new Plane(glm::vec3(-20, -20, -40),
-            glm::vec3(20, -20, -40),
-            glm::vec3(20, -20, -200),
-            glm::vec3(-20, -20, -200),
+    Plane *floorPlane = new Plane(glm::vec3(-40, -20, -40),
+            glm::vec3(40, -20, -40),
+            glm::vec3(40, -20, -200),
+            glm::vec3(-40, -20, -200),
             glm::vec3(0.2));
+	
+	Plane *backPlane = new Plane(glm::vec3(-40, -20, -200),
+			glm::vec3(40, -20, -200),
+			glm::vec3(40, 100, -200),
+			glm::vec3(-40, 100, -200),
+			glm::vec3(0.5, 0.1, 0.1));
 
 	// Add all the created object pointers to the sceneObjects stack
     sceneObjects.push_back(sphere1); // Index 0 - Blue sphere (reflections)
     sceneObjects.push_back(sphere2); // Index 1 - Red sphere
     sceneObjects.push_back(sphere3); // Index 2 - Green sphere (translucent with refraction)
     sceneObjects.push_back(floorPlane); // Index 3 - Checkered floor plane
-    sceneObjects.push_back(cone1); // Index 4 - Cone
-    sceneObjects.push_back(cylinder1); // Index 5 - Yellow cylinder
+	sceneObjects.push_back(backPlane); // Index 4 - Textured back plane
+    sceneObjects.push_back(cone1); // Index 5 - Cone
+    sceneObjects.push_back(cylinder1); // Index 6 - Yellow cylinder
 
     // Create a rectangular prism
-    cubeoid(-10, 7.5, -90.0, 4, 2, 6, glm::vec3(0.2, 0.8, 0.8));
+    cubeoid(-10, 7.5, -90.0, 4, 6, 6, glm::vec3(0.2, 0.8, 0.8));
 }
 
 
@@ -382,7 +394,7 @@ void initialize()
 int main(int argc, char *argv[]) {
     glutInit(&argc, argv);
     glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB );
-    glutInitWindowSize(700, 700);
+    glutInitWindowSize(800, 800);
     glutInitWindowPosition(20, 20);
     glutCreateWindow("Ray-tracing assignment");
 
