@@ -21,7 +21,7 @@ using namespace std;
 const float WIDTH = 20.0;  
 const float HEIGHT = 20.0;
 const float EDIST = 40.0;
-const int NUMDIV = 700;
+const int NUMDIV = 500;
 const int MAX_STEPS = 5;
 const float XMIN = -WIDTH * 0.5;
 const float XMAX =  WIDTH * 0.5;
@@ -94,8 +94,8 @@ glm::vec3 trace(Ray ray, int step)
     /*
      * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
      * PROCEDURAL TEXTURE GENERATIONS
-     * Object: Plane
-     * Index:  3
+     * Objects: Floor plane, back plane, sphere
+     * Index:  3, 4, 5
      * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
      */
 
@@ -112,6 +112,17 @@ glm::vec3 trace(Ray ray, int step)
         float tVal = (ray.xpt.y + 20) / 40;
 
         materialCol = backPlane.getColorAt(sVal, tVal);
+    }
+
+    if(ray.xindex == 5) {
+        glm::vec3 sphereCenter(7.5, 12.5, -80);
+        glm::vec3 dir = glm::normalize(ray.xpt - sphereCenter);
+
+        float uVal = 0.5 + atan2(dir.z, dir.x) / (2 * M_PI);
+        float vVal = 0.5 + asin(dir.y) / M_PI;
+
+        materialCol = sphereTexture.getColorAt(uVal, vVal);
+
     }
 
     /*
@@ -370,9 +381,10 @@ void initialize()
 
 
 	// Create some spheres
-    Sphere *sphere1 = new Sphere(glm::vec3(-5.0, -5.0, -120.0), 10.0, glm::vec3(0.2, 0.2, 0.2));
+    Sphere *sphere1 = new Sphere(glm::vec3(-5.0, -5.0, -120.0), 10.0, glm::vec3(0.2));
     Sphere *sphere2 = new Sphere(glm::vec3(7.5, -5, -60.0), 5.0, glm::vec3(1, 0, 0));
-    Sphere *sphere3 = new Sphere(glm::vec3(-7.5, -2.5, -60.0), 2.5, glm::vec3(0.4, 0.4, 0.4));
+    Sphere *sphere3 = new Sphere(glm::vec3(-7.5, -2.5, -60.0), 2.5, glm::vec3(0.4));
+    Sphere *sphere4 = new Sphere(glm::vec3(7.5, 12.5, -80), 5, glm::vec3(0.2));
     Cone *cone1 = new Cone(glm::vec3(12.5, -10.0, -90.0), 3.0, 7.5, glm::vec3(0.1, 0.2, 0.4));
     Cylinder *cylinder1 = new Cylinder(glm::vec3(-10.0, -10.0, -80.0), 4.0, 5.0, glm::vec3(1, 1, 0));
 
@@ -395,8 +407,9 @@ void initialize()
     sceneObjects.push_back(sphere3); // Index 2 - Green sphere (translucent with refraction)
     sceneObjects.push_back(floorPlane); // Index 3 - Checkered floor plane
 	sceneObjects.push_back(backPlane); // Index 4 - Textured back plane
-    sceneObjects.push_back(cone1); // Index 5 - Cone
-    sceneObjects.push_back(cylinder1); // Index 6 - Yellow cylinder
+	sceneObjects.push_back(sphere4); // Index 5 - Textured sphere
+    sceneObjects.push_back(cone1); // Index 6 - Cone
+    sceneObjects.push_back(cylinder1); // Index 7 - Yellow cylinder
 
     // Create a rectangular prism
     cubeoid(-10, 7.5, -90.0, 4, 6, 6, glm::vec3(0.2, 0.8, 0.8));
