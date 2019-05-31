@@ -21,7 +21,7 @@ using namespace std;
 const float WIDTH = 20.0;  
 const float HEIGHT = 20.0;
 const float EDIST = 40.0;
-const int NUMDIV = 500;
+const int NUMDIV = 1000;
 const int MAX_STEPS = 5;
 const float XMIN = -WIDTH * 0.5;
 const float XMAX =  WIDTH * 0.5;
@@ -370,8 +370,8 @@ void display()
 			ray.normalize();				//Normalize the direction of the ray to a unit vector
 
 			// Use anti-aliasing
-		    //glm::vec3 col = antiAliasSuperSample(eye, cellX, xp, yp);
-		    glm::vec3 col = trace (ray, 1);
+		    glm::vec3 col = antiAliasSuperSample(eye, cellX, xp, yp);
+		    //glm::vec3 col = trace (ray, 1);
 
 			glColor3f(col.r, col.g, col.b);
 			glVertex2f(xp, yp);				//Draw each cell with its color value
@@ -411,7 +411,7 @@ void initialize()
     Sphere *sphere4 = new Sphere(glm::vec3(7.5, 10.0, -80), 6.0, glm::vec3(0.2));
     Sphere *sphere5 = new Sphere(glm::vec3(7.5, -5.5, -80), 2.5, glm::vec3(1, 1, 0));
     Sphere *sphere6 = new Sphere(glm::vec3(-3.5, 6.0, -40), 1.0, glm::vec3(0.2));
-    Sphere *sphere7 = new Sphere(glm::vec3(-1.0, -2.5, -60), 4.0, glm::vec3(0.2, 1.0, 0.2));
+    Sphere *sphere7 = new Sphere(glm::vec3(-1.5, 7.5, -60), 4.0, glm::vec3(0, 0, 1));
 
     Cone *cone1 = new Cone(glm::vec3(12.5, -5.0, -90.0), 3.0, 7.5, glm::vec3(0.1, 0.2, 0.4));
     Cylinder *cylinder1 = new Cylinder(glm::vec3(-10.0, -10.0, -80.0), 4.0, 5.0, glm::vec3(1, 1, 0));
@@ -440,7 +440,7 @@ void initialize()
 	sceneObjects.push_back(sphere6); // Index 7 - Textured sphere earth
     sceneObjects.push_back(cone1); // Index 8 - Cone
     sceneObjects.push_back(cylinder1); // Index 9 - Yellow cylinder
-    sceneObjects.push_back(sphere7); // Index 9 - Yellow cylinder
+    sceneObjects.push_back(sphere7); // Index 10 - Transparent blue sphere
 
     // Create a rectangular prism
     cubeoid(-7.5, 2.5, -40.0, 2, 50, 2, glm::vec3(0.5, 1, 0.5)); // Index 11+
