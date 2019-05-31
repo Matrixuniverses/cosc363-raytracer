@@ -411,7 +411,7 @@ void initialize()
     Sphere *sphere4 = new Sphere(glm::vec3(7.5, 10.0, -80), 6.0, glm::vec3(0.2));
     Sphere *sphere5 = new Sphere(glm::vec3(7.5, -5.5, -80), 2.5, glm::vec3(1, 1, 0));
     Sphere *sphere6 = new Sphere(glm::vec3(-3.5, 6.0, -40), 1.0, glm::vec3(0.2));
-    Sphere *sphere7 = new Sphere(glm::vec3(-1.5, 7.5, -60), 4.0, glm::vec3(0, 0, 1));
+    Sphere *sphere7 = new Sphere(glm::vec3(-1.5, 5.5, -60), 4.0, glm::vec3(0, 0, 1));
 
     Cone *cone1 = new Cone(glm::vec3(12.5, -5.0, -90.0), 3.0, 7.5, glm::vec3(0.1, 0.2, 0.4));
     Cylinder *cylinder1 = new Cylinder(glm::vec3(-10.0, -10.0, -80.0), 4.0, 5.0, glm::vec3(1, 1, 0));
